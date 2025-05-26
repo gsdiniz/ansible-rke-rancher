@@ -1,0 +1,21 @@
+- name: Create config dir
+  become: true
+  file:
+    path: /etc/rancher/rke2
+    state: directory
+
+- name: Create cluster config file
+  when: inventory_hostname != primary_master
+  become: true
+  template:
+    src: rke2-master-config.yaml.j2
+    dest: /etc/rancher/rke2/config.yaml
+    mode: '0644'
+      
+
+- name: Start server instance
+  become: true
+  ansible.builtin.service:
+    name: rke2-server
+    state: started
+    enabled: true

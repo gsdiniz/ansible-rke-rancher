@@ -1,0 +1,30 @@
+- name: Install RKE2 binaries
+  become: true
+  ansible.builtin.shell:
+    cmd: curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+    creates: /usr/local/bin/rke2
+
+# - name: Instalar RKE-AGENT
+#   ansible.builtin.yum:
+#     name:
+#     - rke2-agent
+#     state: present
+    
+- name: Create cluster config dir
+  become: true
+  file:
+    path: /etc/rancher/rke2
+    state: directory
+
+- name: Set initial agent config
+  become: true
+  template:
+    src: rke2-agent-config.yaml.j2
+    dest: /etc/rancher/rke2/config.yaml
+    mode: '0644'
+
+- name: Ensure rke2-agent.service is restarted
+  ansible.builtin.systemd:
+    name: rke2-agent.service
+    state: started
+    enabled: true

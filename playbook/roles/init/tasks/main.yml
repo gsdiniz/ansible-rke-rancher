@@ -1,0 +1,54 @@
+---
+- name: MASTER PRINCIPAL DEFINIDO
+  assert:
+    that:
+      - primary_master is defined
+      - primary_master in groups['masters']
+    fail_msg: "primary_master deve ser um master node"
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ hostname }}"
+    use: systemd
+
+- name: Atualiza pacotes
+  become: true
+  ansible.builtin.yum:
+    name: "*"
+    state: latest
+    update_cache: true
+
+- name: Install pacotes básicos
+  ansible.builtin.yum:
+    name:
+    - curl
+    - iscsi-initiator-utils
+    - nfs-utils
+    - bash
+    - cryptsetup
+    - device-mapper
+    state: present
+
+- name: Iniciar open-iscsi service
+  ansible.builtin.service:
+    name: iscsid
+    state: started
+    enabled: true
+
+- name: Ensure vm.overcommit_memory=1 is in sysctl.conf
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^vm\.overcommit_memory='
+    line: 'vm.overcommit_memory=1'
+    state: present
+
+- name: Ensure kernel.panic=10 is in sysctl.conf
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    regexp: '^kernel\.panic='
+    line: 'kernel.panic=10'
+    state: present
+
+- name: Apply sysctl changes
+  ansible.builtin.command:
+    cmd: sysctl -p

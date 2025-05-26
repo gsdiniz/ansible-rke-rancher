@@ -1,0 +1,68 @@
+- name: Download Kubectl Installer
+  ansible.builtin.shell:
+    cmd: 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
+    creates: /usr/local/bin/kubectl
+
+- name: Install Kubectl
+  shell: install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+- name: Check if git is installed
+  shell: /usr/bin/git -v
+  register: git_check
+  ignore_errors: yes
+
+- name: Install git
+  ansible.builtin.yum:
+    name:  git
+    state: latest
+  when: git_check.stderr.find('No such file or directory') != -1 or git_check.stderr.find('Arquivo ou diretório inexistente') != -1
+
+- name: Check if Helm is installed
+  shell: /usr/local/bin/helm version
+  register: helm_check
+  ignore_errors: yes
+
+- name: Download Helm
+  shell: 'curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 /tmp/get_helm.sh && /tmp/get_helm.sh'
+  ignore_errors: yes
+  when: helm_check.stderr.find('No such file or directory') != -1 or helm_check.stderr.find('Arquivo ou diretório inexistente') != -1
+
+- name: Add rancher repo to helm
+  shell: '/usr/local/bin/helm repo add rancher-stable https://releases.rancher.com/server-charts/stable'
+  when: helm_check.stderr.find('No such file or directory') != -1 or helm_check.stderr.find('Arquivo ou diretório inexistente') != -1
+
+- name: Add jetstack repo to helm
+  shell: '/usr/local/bin/helm repo add  jetstack https://charts.jetstack.io'
+  when: helm_check.stderr.find('No such file or directory') != -1 or helm_check.stderr.find('Arquivo ou diretório inexistente') != -1
+
+- name: Update Helm
+  shell: '/usr/local/bin/helm repo update'
+  when: helm_check.stderr.find('No such file or directory') != -1 or helm_check.stderr.find('Arquivo ou diretório inexistente') != -1
+
+- name: Create cluster config dir
+  file:
+    path: /etc/rancher/rke2
+    state: directory
+
+- name: Set initial server config
+  template:
+    src: rke2-principal-config.yaml.j2
+    dest: /etc/rancher/rke2/config.yaml
+    mode: '0644'
+
+- name: Start server instance
+  ansible.builtin.service:
+    name: rke2-server
+    state: started
+    enabled: true
+
+- name: Create kubeconfig dir
+  file:
+    path: /root/.kube
+    state: directory
+
+- name: Create kubeconfig file
+  ansible.builtin.file:
+    src: /etc/rancher/rke2/kubeconfig.yaml
+    dest: /root/.kube/config
+    state: link

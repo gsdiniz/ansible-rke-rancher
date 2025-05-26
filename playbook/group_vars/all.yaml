@@ -1,0 +1,6 @@
+---
+primary_master: master1
+cluster_cidr: 10.132.0.0/16
+service_cidr: 172.30.0.0/16
+cluster_dns: 172.30.0.10
+rancher_hostname: rancher.local

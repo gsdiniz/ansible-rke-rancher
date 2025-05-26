@@ -1,0 +1,28 @@
+cluster-cidr: {{cluster_cidr}}
+service-cidr: {{service_cidr}}
+cluster-dns: {{cluster_dns}}
+cluster-domain: cluster.local
+cni: calico
+tls-san:
+{{ master_ips | to_nice_yaml }}
+# node-external-ip:
+# - "{{ ansible_ssh_host }}"
+node-ip:
+- "{{ ansible_ssh_host }}"
+# ETCD configuration
+etcd-expose-metrics: true
+
+# Control plane node configuration
+write-kubeconfig: "/etc/rancher/rke2/kubeconfig.yaml"
+write-kubeconfig-mode: "0644"
+
+# Logging and auditing
+kube-apiserver-arg:
+- "audit-log-path=/var/log/kube-audit/audit.log"
+- "audit-log-maxage=30"
+- "audit-log-maxbackup=10"
+- "audit-log-maxsize=100"
+
+# Add-on configurations
+selinux: true           # Enable SELinux
+profile: ""     # CIS benchmarks compliance
