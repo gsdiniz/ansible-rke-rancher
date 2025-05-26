@@ -9,6 +9,13 @@ Ansible playbook to configure RKE2 Cluster with Rancher installed using custom C
 1. Custom CA root configured
 1. Custom tls-certificate to be used in https Rancher's URL
 
+## Playbook - Inventory
+
+Configure `./inventory/hosts.yml` with hosts information:
+
+* IP
+* Hostname
+
 ## Playbook - RKE2
 
 ```
