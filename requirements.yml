@@ -1,5 +1,6 @@
 ---
 collections:
-  - name: community.general
-    version: 4.8.1
-    type: galaxy
+- name: community.general
+  version: 4.8.1
+  type: galaxy
+- name: kubernetes.core

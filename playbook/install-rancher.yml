@@ -1,86 +1,177 @@
----
-- name:  TST - INSTALAÇÃO RANCHER - VALIDAR VARIÁVEIS
-  become: true
+- name: Validate Configs
+  hosts: "masters"
+  become: yes
   gather_facts: no
-  hosts: "{{ hostvars['localhost']['primary_master'] }}"
   tasks:
-    - name: MASTER PRINCIPAL DEFINIDO
-      assert:
+    - name: Validate primary_master is defined and in masters group
+      ansible.builtin.assert:
         that:
           - primary_master is defined
           - primary_master in groups['masters']
-        fail_msg: "primary_master deve ser um master node"
+        fail_msg: "primary_master must be a master node"
+        quiet: true
 
-    - name: RANCHER URL DEFINIDA
-      assert:
+    - name: Validate rancher_hostname is defined
+      ansible.builtin.assert:
         that:
           - rancher_hostname is defined
-        fail_msg: "Variável rancher_hostname não foi definida"
+        fail_msg: "rancher_hostname variable is not defined"
+        quiet: true
 
-    - name: Create cattle system namespace
-      shell: "/usr/local/bin/kubectl create namespace cattle-system"
-      ignore_errors: yes
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+- name: Install Rancher on RKE2 Cluster
+  hosts: "{{ hostvars['localhost']['primary_master'] | default('localhost') }}"
+  become: yes
+  gather_facts: no
+  collections:
+    - kubernetes.core
+  vars:
+    rancher_namespace: cattle-system
+    cert_manager_namespace: cert-manager
+    cert_manager_version: v1.13.1
+    rancher_hostname: "{{ hostvars['localhost']['rancher_hostname'] | mandatory }}"
+    kubeconfig_path: /etc/rancher/rke2/rke2.yaml
+  tasks:
+    - name: Check if kubectl exists
+      stat:
+        path: /usr/local/bin/kubectl
+      register: kubectl_check
 
-    - name: Apply Cert Manager CRDS
-      shell: "/usr/local/bin/kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.1/cert-manager.crds.yaml"
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+    - name: Fail if kubectl was not found
+      ansible.builtin.fail:
+        msg: "Error: kubectl was not found at /usr/local/bin/kubectl."
+      when: not kubectl_check.stat.exists
 
-    - name: Create Cert Manager Namespace
-      shell: "/usr/local/bin/kubectl create namespace cert-manager"
-      ignore_errors: yes  
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+    - name: Check if helm exists
+      stat:
+        path: /usr/local/bin/helm
+      register: helm_check
 
-    - name: Copy ADDITIONAL CA's pem file 
+    - name: Fail if helm was not found
+      ansible.builtin.fail:
+        msg: "Error: helm was not found at /usr/local/bin/helm."
+      when: not helm_check.stat.exists
+
+    - name: Create cattle-system namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ rancher_namespace }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: namespace_result
+      failed_when: namespace_result.failed and 'already exists' not in namespace_result.msg
+
+    - name: Create cert-manager namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: "{{ cert_manager_namespace }}"
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: cert_manager_ns_result
+      failed_when: cert_manager_ns_result.failed and 'already exists' not in cert_manager_ns_result.msg
+
+    - name: Apply cert-manager CRDs
+      kubernetes.core.k8s:
+        state: present
+        src: "https://github.com/cert-manager/cert-manager/releases/download/{{ cert_manager_version }}/cert-manager.crds.yaml"
+        kubeconfig: "{{ kubeconfig_path }}"
+      register: crd_result
+      failed_when: crd_result.failed and 'already exists' not in crd_result.msg
+
+    - name: Copy additional CA PEM file
       ansible.builtin.copy:
         src: ./certs/tls-rancher/ca-additional.pem
         dest: /root/ca-additional.pem
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+        mode: '0600'
+      register: ca_copy
 
-    - name: Create Additional CAs Secret
-      shell: "/usr/local/bin/kubectl -n cattle-system create secret generic tls-ca-additional --from-file=ca-additional.pem=/root/ca-additional.pem"
-      ignore_errors: yes
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+    - name: Create tls-ca-additional secret
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: tls-ca-additional
+            namespace: "{{ rancher_namespace }}"
+          type: Opaque
+          data:
+            ca-additional.pem: "{{ lookup('file', './certs/tls-rancher/ca-additional.pem') | b64encode }}"
+      when: ca_copy.changed
 
-    - name: Copy AC-INTERNA PEM
+    - name: Copy internal CA PEM file
       ansible.builtin.copy:
         src: ./certs/tls-rancher/internal-ca.pem
         dest: /root/internal-ca.pem
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+        mode: '0600'
+      register: internal_ca_copy
 
-    - name: Create TLS-CA secret
-      shell: "/usr/local/bin/kubectl -n cattle-system create secret generic tls-ca --from-file=cacerts.pem=/root/internal-ca.pem"
-      ignore_errors: yes
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml 
+    - name: Create tls-ca secret
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: tls-ca
+            namespace: "{{ rancher_namespace }}"
+          type: Opaque
+          data:
+            cacerts.pem: "{{ lookup('file', './certs/tls-rancher/internal-ca.pem') | b64encode }}"
+      when: internal_ca_copy.changed
 
-    - name: Copy TLS key file 
+    - name: Copy TLS key file
       ansible.builtin.copy:
         src: ./certs/tls-rancher/rancher.local.key
         dest: /root/tls.key
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+        mode: '0600'
+      register: tls_key_copy
 
-    - name: Copy TLS cert file 
+    - name: Copy TLS cert file
       ansible.builtin.copy:
         src: ./certs/tls-rancher/rancher.local.crt
         dest: /root/tls.crt
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+        mode: '0644'
+      register: tls_cert_copy
 
-    - name: Create TLS key and cert secret
-      shell: "/usr/local/bin/kubectl -n cattle-system create secret tls tls-rancher-ingress --cert=/root/tls.crt --key=/root/tls.key"
-      ignore_errors: yes
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml
+    - name: Create tls-rancher-ingress secret
+      kubernetes.core.k8s:
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: tls-rancher-ingress
+            namespace: "{{ rancher_namespace }}"
+          type: kubernetes.io/tls
+          data:
+            tls.crt: "{{ lookup('file', './certs/tls-rancher/rancher.local.crt') | b64encode }}"
+            tls.key: "{{ lookup('file', './certs/tls-rancher/rancher.local.key') | b64encode }}"
+      when: tls_key_copy.changed or tls_cert_copy.changed
 
-    - name: Install Rancher
-      shell: "/usr/local/bin/helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname={{ rancher_hostname }} --set additionalTrustedCAs=true --set privateCA=true --set ingress.tls.source=secret"
-      environment:
-        KUBECONFIG: /etc/rancher/rke2/rke2.yaml    
+    - name: Add Rancher Helm repository
+      kubernetes.core.helm_repository:
+        name: rancher-stable
+        repo_url: https://releases.rancher.com/server-charts/stable
+        state: present
+
+    - name: Install Rancher via Helm
+      kubernetes.core.helm:
+        name: rancher
+        chart_ref: rancher-stable/rancher
+        release_namespace: "{{ rancher_namespace }}"
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        values:
+          hostname: "{{ rancher_hostname }}"
+          additionalTrustedCAs: true
+          privateCA: true
+          ingress:
+            tls:
+              source: secret
+      register: helm_result
+      failed_when: helm_result.failed and 'already exists' not in helm_result.msg
