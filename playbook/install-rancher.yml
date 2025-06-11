@@ -1,7 +1,7 @@
 - name: Validate Configs
   hosts: "masters"
   become: yes
-  gather_facts: no
+  gather_facts: yes
   tasks:
     - name: Validate primary_master is defined and in masters group
       ansible.builtin.assert:
@@ -17,6 +17,29 @@
           - rancher_hostname is defined
         fail_msg: "rancher_hostname variable is not defined"
         quiet: true
+
+    - name: Show ansible_os_family
+      ansible.builtin.debug:
+        var: ansible_os_family
+
+    - name: Ensure python3-pip is installed (for Debian/Ubuntu)
+      ansible.builtin.apt:
+        name: python3-pip
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+      
+    - name: Ensure python3-pip is installed (for RHEL/CentOS/Fedora)
+      ansible.builtin.yum: # Or 'dnf' for newer Fedora/RHEL
+        name: python3-pip
+        state: present
+      when: ansible_os_family == "RedHat" or ansible_os_family == "Fedora" or ansible_os_family == "Rocky"
+
+    - name: Install the Kubernetes Python client library
+      ansible.builtin.pip:
+        name: kubernetes
+        state: present
+        executable: pip 
 
 - name: Install Rancher on RKE2 Cluster
   hosts: "{{ hostvars['localhost']['primary_master'] | default('localhost') }}"
