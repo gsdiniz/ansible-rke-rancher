@@ -3,3 +3,6 @@ collections:
 - name: community.general
   version: 11.2.1
   type: galaxy
+- name: kubernetes.core
+  version: 2.2.1
+  type: galaxy
