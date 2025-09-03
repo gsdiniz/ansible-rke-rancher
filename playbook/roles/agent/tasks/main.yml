@@ -4,11 +4,12 @@
     cmd: curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
     creates: /usr/local/bin/rke2
 
-# - name: Instalar RKE-AGENT
-#   ansible.builtin.yum:
-#     name:
-#     - rke2-agent
-#     state: present
+- name: Install RKE2-SELINUX
+  become: true
+  ansible.builtin.dnf:
+    name:
+    - rke2-selinux
+    state: present
     
 - name: Create cluster config dir
   become: true

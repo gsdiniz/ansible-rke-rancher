@@ -1,3 +1,15 @@
+- name: Install RKE2 binaries
+  ansible.builtin.shell:
+    cmd: curl -sfL https://get.rke2.io | sh -
+    creates: /usr/local/bin/rke2
+
+- name: Install RKE2-SELINUX
+  become: true
+  ansible.builtin.dnf:
+    name:
+    - rke2-selinux
+    state: present
+
 - name: Download Kubectl Installer
   ansible.builtin.shell:
     cmd: 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'

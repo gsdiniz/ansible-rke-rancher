@@ -3,3 +3,4 @@ playbook/certs/**/*.crt
 playbook/certs/**/*.key
 playbook/certs/**/*.csr
 playbook/certs/**/*.cnf
+playbook/certs/**/*.srl

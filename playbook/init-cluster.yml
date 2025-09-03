@@ -1,40 +1,28 @@
-- name: TST - CONFIGURAÇÃO [INICIAL] CLUSTER RANCHER
+- name: Initial Config
   hosts: all
   become: true
   gather_facts: no
   roles:
     - role: init
 
-- name: TST - CONFIGURAÇÃO [NODES MASTER] CLUSTER RANCHER
+- name: Setting Fact - MASTER_IPS
   hosts: masters
-  become: true
   gather_facts: no
   tasks:
-    - name: Install RKE2 binaries
-      become: true
-      ansible.builtin.shell:
-        cmd: curl -sfL https://get.rke2.io | sh -
-        creates: /usr/local/bin/rke2
-        
-    # - name: Instalar RKE-SERVER
-    #   ansible.builtin.yum:
-    #     name:
-    #     - rke2-server
-    #     state: present
-    - name: Coleta ip dos nodes masters
+    - name: Get master node ip
       set_fact:
         master_ips: "{{ master_ips | default([]) + [ansible_ssh_host] }}"
-      delegate_to: "{{ item }}"
+      # delegate_to: "{{ item }}"
       with_inventory_hostnames: masters
 
-- name: TST - CONFIGURAÇÃO [NODE PRINCIPAL] CLUSTER RANCHER
+- name: Configure Principal Master Node
   hosts: "{{ hostvars['localhost']['primary_master'] }}"
   become: true
   roles:
     - role: principal
 
 
-- name: TST - CONFIGURAÇÃO [OBTER NODE TOKEN] CLUSTER RANCHER
+- name: Publish Node Token to Nodes
   hosts: all
   become: true
   tasks:
@@ -46,18 +34,18 @@
 
     - name: Set cluster facts on all nodes
       set_fact:
-        master_url: "https://{{ ansible_ssh_host }}:9345"
+        master_url: "https://{{ ansible_host }}:9345"
         node_token: "{{ node_token_b64.content | b64decode }}"
-      delegate_to: "{{ primary_master }}"
+      # delegate_to: "{{ primary_master }}"
       run_once: true
 
-- name: TST - ADICIONAR [SERVER NODES] CLUSTER RANCHER
+- name: Adding Master Nodes
   hosts: masters
   become: true
   roles:
     - role: server
 
-- name: TST - ADICIONAR [WORKER NODES] CLUSTER RANCHER
+- name: Adding Worker Nodes
   hosts: workers
   become: true
   roles:

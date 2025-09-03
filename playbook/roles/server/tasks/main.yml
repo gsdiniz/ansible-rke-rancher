@@ -1,3 +1,8 @@
+- name: Install RKE2 binaries
+  ansible.builtin.shell:
+    cmd: curl -sfL https://get.rke2.io | sh -
+    creates: /usr/local/bin/rke2
+
 - name: Create config dir
   become: true
   file:
@@ -11,6 +16,13 @@
     src: rke2-master-config.yaml.j2
     dest: /etc/rancher/rke2/config.yaml
     mode: '0644'
+
+- name: Install RKE2-SELINUX
+  become: true
+  ansible.builtin.dnf:
+    name:
+    - rke2-selinux
+    state: present
       
 
 - name: Start server instance
