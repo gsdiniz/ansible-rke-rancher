@@ -2,6 +2,8 @@
 
 Ansible playbook to configure RKE2 Cluster with Rancher installed using custom CA root.
 
+***Tests made in Rocky Linux 9***
+
 ## Prerequisites
 1. 3 or more hosts / vm's - EL's distros (Oracle Linux, SUSE Linux, Red Hat, Alma Linux, Rocky Linux)
 1. Public ssh keys configured in hosts
@@ -27,19 +29,25 @@ This playbook is divided in 4 roles:
 
 ### Init
 
-This role will 
+Installation of basic configuration in all hosts to rke2 cluster communicate and works in a RHEL, configure firewalld, kernel modules and update packages.
 
 ### Principal
 
-This role will 
+Based in group vars, the principal master host is defined and configured as first and principal master node. It will be installed:
+* rke2
+* rke2-selinux
+* kubectl
+* git
+* helm
 
 ### Masters
 
-This role will 
+All others master nodes and new added nodes will receive node-token from principal node to be configured as master node in rke2-cluster.
 
 ### Agents
 
-This role will 
+All worker nodes and new added nodes will receive node-token from principal node to be configured as worker node in rke2-cluster.
+
 
 ### Starting Up
 
