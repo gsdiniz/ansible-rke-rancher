@@ -130,6 +130,14 @@
     state: enabled
     zone: public
 
+- name: Allow Calico IP-in-IP protocol
+  ansible.posix.firewalld:
+    rich_rule: 'rule protocol value="4" accept'
+    permanent: yes
+    immediate: yes
+    state: enabled
+    zone: public
+
 - name: Reload firewalld to apply changes
   command: firewall-cmd --reload
   changed_when: true

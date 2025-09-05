@@ -38,6 +38,7 @@ kernel_modules:
 - xt_tcpudp
 tcp_ports:
 - 22
+- 53
 - 80
 - 179
 - 443
@@ -57,6 +58,7 @@ tcp_ports:
 - 10254
 - 30000-32767
 udp_ports:
+- 53
 - 4789
 - 8472
 - 30000-32767

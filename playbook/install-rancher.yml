@@ -94,10 +94,17 @@
       register: cert_manager_ns_result
       failed_when: cert_manager_ns_result.failed and 'already exists' not in cert_manager_ns_result.msg
 
+    - name: Download Cert-Manager CRDs
+      ansible.builtin.get_url:
+        url: "https://github.com/cert-manager/cert-manager/releases/download/{{ cert_manager_version }}/cert-manager.crds.yaml"
+        dest: "/tmp/cert-manager.crds.yaml"
+        headers:
+          Accept: "application/octet-stream"
+
     - name: Apply cert-manager CRDs
       kubernetes.core.k8s:
         state: present
-        src: "https://github.com/cert-manager/cert-manager/releases/download/{{ cert_manager_version }}/cert-manager.crds.yaml"
+        src: "/tmp/cert-manager.crds.yaml"
         kubeconfig: "{{ kubeconfig_path }}"
       register: crd_result
       failed_when: crd_result.failed and 'already exists' not in crd_result.msg
@@ -179,11 +186,13 @@
     - name: Add Rancher Helm repository
       kubernetes.core.helm_repository:
         name: rancher-stable
+        binary_path: "/usr/local/bin/helm"
         repo_url: https://releases.rancher.com/server-charts/stable
         state: present
 
     - name: Install Rancher via Helm
       kubernetes.core.helm:
+        binary_path: "/usr/local/bin/helm"
         name: rancher
         chart_ref: rancher-stable/rancher
         release_namespace: "{{ rancher_namespace }}"
