@@ -2,7 +2,7 @@ cluster-cidr: {{cluster_cidr}}
 service-cidr: {{service_cidr}}
 cluster-dns: {{cluster_dns}}
 cluster-domain: cluster.local
-cni: calico
+cni: canal
 tls-san:
 {{ master_ips | to_nice_yaml }}
 # node-external-ip:
@@ -16,6 +16,9 @@ etcd-expose-metrics: true
 write-kubeconfig: "/etc/rancher/rke2/kubeconfig.yaml"
 write-kubeconfig-mode: "0644"
 
+#kube-proxy-arg:
+#- "proxy-mode=iptables"
+
 # Logging and auditing
 kube-apiserver-arg:
 - "audit-log-path=/var/log/kube-audit/audit.log"
@@ -24,5 +27,5 @@ kube-apiserver-arg:
 - "audit-log-maxsize=100"
 
 # Add-on configurations
-selinux: true           # Enable SELinux
+selinux: false           # Enable SELinux
 profile: ""     # CIS benchmarks compliance
