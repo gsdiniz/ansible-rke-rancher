@@ -91,13 +91,13 @@
 #     state: present
 #   loop: "{{ kernel_modules }}"
 
-# - name: Configure kernel modules to load on boot
-#   lineinfile:
-#     path: /etc/modules-load.d/rke2.conf
-#     line: "{{ item }}"
-#     create: yes
-#     mode: '0644'
-#   loop: "{{ kernel_modules }}"
+- name: Configure kernel modules to load on boot
+  lineinfile:
+    path: /etc/modules-load.d/rke2.conf
+    line: "{{ item }}"
+    create: yes
+    mode: '0644'
+  loop: "{{ kernel_modules }}"
 
 - name: Ensure Kubernetes sysctl parameters are configured
   copy:
