@@ -42,7 +42,6 @@
     - policycoreutils
     - policycoreutils-python-utils
     - selinux-policy-targeted
-    - iptables
     state: present
 
 - name: Download and install Calico SELinux policy
@@ -71,35 +70,15 @@
     line: 'kernel.panic=10'
     state: present
 
-# - name: Apply sysctl changes
-#   ansible.builtin.command:
-#     cmd: sysctl -p
-
-- name: Ensure firewalld is disabled
+- name: Ensure services are disabled
   ansible.builtin.service:
     name: "{{ item }}"
     state: stopped
     enabled: no
   loop:
     - firewalld
-    # - nm-cloud-setup.timer
-    # - nm-cloud-setup.service
 
-# - name: Load kernel modules for RKE2
-#   modprobe:
-#     name: "{{ item }}"
-#     state: present
-#   loop: "{{ kernel_modules }}"
-
-- name: Configure kernel modules to load on boot
-  lineinfile:
-    path: /etc/modules-load.d/rke2.conf
-    line: "{{ item }}"
-    create: yes
-    mode: '0644'
-  loop: "{{ kernel_modules }}"
-
-- name: Ensure Kubernetes sysctl parameters are configured
+- name: Ensure flannel and calico interfaces are unmanaged by network manager 
   copy:
     dest: /etc/NetworkManager/conf.d/rke2-canal.conf
     content: | 
@@ -107,20 +86,10 @@
       unmanaged-devices=interface-name:flannel*;interface-name:cali*
     mode: '0644'
 
-# - name: Ensure Kubernetes sysctl parameters are configured
-#   copy:
-#     dest: /etc/sysctl.d/90-k8s.conf
-#     content: |
-#       net.ipv4.ip_forward                 = 1
-#     mode: '0644'
-
-# - name: Apply Kubernetes sysctl parameters
-#   command: sysctl --system
-
 - name: Set SELinux to permissive mode
   ansible.posix.selinux:
     policy: targeted
-    state: permissive
+    state: enforcing
 
 - name: Reboot node
   ansible.builtin.reboot:
@@ -129,62 +98,3 @@
 - name: Reboot result
   ansible.builtin.debug:
     msg: "The reboot took {{ reboot_result.elapsed }} seconds. Was it successful? {{ reboot_result.rebooted }}"
-    
-# - name: Allow required TCP ports for RKE2 and Rancher
-#   ansible.posix.firewalld:
-#     port: "{{ item }}/tcp"
-#     permanent: yes
-#     immediate: yes
-#     state: enabled
-#     zone: public
-#   loop: "{{ tcp_ports }}"
-
-# - name: Allow required UDP ports for RKE2 and Rancher
-#   ansible.posix.firewalld:
-#     port: "{{ item }}/udp"
-#     permanent: yes
-#     immediate: yes
-#     state: enabled
-#     zone: public
-#   loop: "{{ udp_ports }}"
-
-# - name: Allow Kubernetes node port services (TCP)
-#   ansible.posix.firewalld:
-#     port: "{{ item }}/tcp"
-#     permanent: yes
-#     immediate: yes
-#     state: enabled
-#     zone: public
-#   loop:
-#     - 30000-32767
-#   when: tcp_ports is defined
-
-# - name: Allow Kubernetes node port services (UDP)
-#   ansible.posix.firewalld:
-#     port: "{{ item }}/udp"
-#     permanent: yes
-#     immediate: yes
-#     state: enabled
-#     zone: public
-#   loop:
-#     - 30000-32767
-#   when: udp_ports is defined
-
-# - name: Allow ICMP echo-request (ping) for Cilium health checks
-#   ansible.posix.firewalld:
-#     rich_rule: 'rule protocol value="icmp" accept'
-#     permanent: yes
-#     immediate: yes
-#     state: enabled
-#     zone: public
-
-# - name: Allow Calico IP-in-IP protocol
-#   ansible.posix.firewalld:
-#     rich_rule: 'rule protocol value="4" accept'
-#     permanent: yes
-#     immediate: yes
-#     state: enabled
-#     zone: public
-
-# - name: Reload firewalld to apply changes
-#   command: firewall-cmd --reload
