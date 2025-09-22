@@ -2,7 +2,7 @@ cluster-cidr: {{cluster_cidr}}
 service-cidr: {{service_cidr}}
 cluster-dns: {{cluster_dns}}
 cluster-domain: cluster.local
-cni: calico
+cni: canal
 tls-san:
 {{ master_ips | to_nice_yaml }}
 # node-external-ip:
@@ -22,7 +22,23 @@ kube-apiserver-arg:
 - "audit-log-maxage=30"
 - "audit-log-maxbackup=10"
 - "audit-log-maxsize=100"
+- "--default-not-ready-toleration-seconds=30"
+- "--default-unreachable-toleration-seconds=30"
+kube-scheduler-arg:
+- "bind-address=0.0.0.0"
+kube-controller-manager-arg:
+- "bind-address=0.0.0.0"
+- "--node-monitor-period=4s"
+kubelet-arg:
+- "--node-status-update-frequency=4s"
+- "--max-pods=100"
+kube-proxy-arg:
+- metrics-bind-address=0.0.0.0:10249
+- "proxy-mode=nftables"
 
 # Add-on configurations
 selinux: true           # Enable SELinux
 profile: ""     # CIS benchmarks compliance
+
+node-taint:
+- "CriticalAddonsOnly=true:NoExecute"
