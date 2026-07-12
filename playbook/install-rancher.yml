@@ -42,7 +42,7 @@
         executable: pip 
 
 - name: Install Rancher on RKE2 Cluster
-  hosts: "{{ hostvars['localhost']['primary_master'] | default('localhost') }}"
+  hosts: masters
   become: yes
   gather_facts: no
   collections:
@@ -51,9 +51,12 @@
     rancher_namespace: cattle-system
     cert_manager_namespace: cert-manager
     cert_manager_version: v1.13.1
-    rancher_hostname: "{{ hostvars['localhost']['rancher_hostname'] | mandatory }}"
     kubeconfig_path: /etc/rancher/rke2/rke2.yaml
   tasks:
+    - name: Run this play only on the primary master
+      ansible.builtin.meta: end_host
+      when: inventory_hostname != primary_master
+
     - name: Check if kubectl exists
       stat:
         path: /usr/local/bin/kubectl
@@ -129,7 +132,7 @@
           type: Opaque
           data:
             ca-additional.pem: "{{ lookup('file', './certs/tls-rancher/ca-additional.pem') | b64encode }}"
-      when: ca_copy.changed
+      no_log: true
 
     - name: Copy internal CA PEM file
       ansible.builtin.copy:
@@ -151,7 +154,7 @@
           type: Opaque
           data:
             cacerts.pem: "{{ lookup('file', './certs/tls-rancher/internal-ca.pem') | b64encode }}"
-      when: internal_ca_copy.changed
+      no_log: true
 
     - name: Copy TLS key file
       ansible.builtin.copy:
@@ -159,6 +162,7 @@
         dest: /root/tls.key
         mode: '0600'
       register: tls_key_copy
+      no_log: true
 
     - name: Copy TLS cert file
       ansible.builtin.copy:
@@ -181,7 +185,7 @@
           data:
             tls.crt: "{{ lookup('file', './certs/tls-rancher/rancher.local.crt') | b64encode }}"
             tls.key: "{{ lookup('file', './certs/tls-rancher/rancher.local.key') | b64encode }}"
-      when: tls_key_copy.changed or tls_cert_copy.changed
+      no_log: true
 
     - name: Add Rancher Helm repository
       kubernetes.core.helm_repository:

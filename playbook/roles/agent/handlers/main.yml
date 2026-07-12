@@ -1,0 +1,5 @@
+---
+- name: Restart rke2-agent
+  ansible.builtin.systemd:
+    name: rke2-agent.service
+    state: restarted

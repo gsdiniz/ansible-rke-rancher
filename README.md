@@ -13,7 +13,7 @@ Ansible playbook to configure RKE2 Cluster with Rancher installed using custom C
 
 ## Playbook - Inventory
 
-Configure `./inventory/hosts.yml` with hosts information:
+Use `./inventory/hosts.yml` as a versioned example. For real environments, copy it to `./inventory/hosts.local.yml` or another ignored inventory file and keep host-specific data out of git.
 
 * IP
 * Hostname
@@ -52,7 +52,7 @@ All worker nodes and new added nodes will receive node-token from principal node
 ### Starting Up
 
 ```
-ansible-playbook -i inventory/hosts.yml playbook/init-cluster.yml
+ansible-playbook -i inventory/hosts.local.yml playbook/init-cluster.yml
 ```
 
 ## Playbook - RANCHER
@@ -70,5 +70,5 @@ After generating necessary files in certs/tls-rancher folder:
     * TlS crt and key that will be used in https 
 
 ```
-ansible-playbook -i inventory/hosts.yml playbook/install-rancher.yml
+ansible-playbook -i inventory/hosts.local.yml playbook/install-rancher.yml
 ```

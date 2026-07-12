@@ -4,3 +4,9 @@ playbook/certs/**/*.key
 playbook/certs/**/*.csr
 playbook/certs/**/*.cnf
 playbook/certs/**/*.srl
+inventory/hosts.local.yml
+inventory/*.secret.yml
+inventory/*.vault.yml
+*.retry
+graphify-out/
+venv/

@@ -19,6 +19,7 @@
     - buildah
     state: absent
     update_cache: true
+  notify: Reboot node
 
 - name: Atualiza pacotes
   become: true
@@ -26,6 +27,7 @@
     name: "*"
     state: latest
     update_cache: true
+  notify: Reboot node
 
 - name: Install pacotes básicos
   ansible.builtin.yum:
@@ -62,6 +64,7 @@
     regexp: '^vm\.overcommit_memory='
     line: 'vm.overcommit_memory=1'
     state: present
+  notify: Reboot node
 
 - name: Ensure kernel.panic=10 is in sysctl.conf
   ansible.builtin.lineinfile:
@@ -69,6 +72,7 @@
     regexp: '^kernel\.panic='
     line: 'kernel.panic=10'
     state: present
+  notify: Reboot node
 
 - name: Ensure services are disabled
   ansible.builtin.service:
@@ -77,6 +81,7 @@
     enabled: no
   loop:
     - firewalld
+  notify: Reboot node
 
 - name: Ensure flannel and calico interfaces are unmanaged by network manager 
   copy:
@@ -85,16 +90,10 @@
       [keyfile]
       unmanaged-devices=interface-name:flannel*;interface-name:cali*
     mode: '0644'
+  notify: Reboot node
 
-- name: Set SELinux to permissive mode
+- name: Set SELinux to enforcing mode
   ansible.posix.selinux:
     policy: targeted
     state: enforcing
-
-- name: Reboot node
-  ansible.builtin.reboot:
-  register: reboot_result
-
-- name: Reboot result
-  ansible.builtin.debug:
-    msg: "The reboot took {{ reboot_result.elapsed }} seconds. Was it successful? {{ reboot_result.rebooted }}"
+  notify: Reboot node

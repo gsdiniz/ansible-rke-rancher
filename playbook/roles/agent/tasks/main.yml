@@ -13,18 +13,21 @@
     
 - name: Create cluster config dir
   become: true
-  file:
+  ansible.builtin.file:
     path: /etc/rancher/rke2
     state: directory
+    mode: '0755'
 
 - name: Set initial agent config
   become: true
-  template:
+  ansible.builtin.template:
     src: rke2-agent-config.yaml.j2
     dest: /etc/rancher/rke2/config.yaml
-    mode: '0644'
+    mode: '0600'
+  no_log: true
+  notify: Restart rke2-agent
 
-- name: Ensure rke2-agent.service is restarted
+- name: Ensure rke2-agent.service is started
   ansible.builtin.systemd:
     name: rke2-agent.service
     state: started
