@@ -12,3 +12,4 @@ inventory/*.vault.yml
 graphify-out/
 venv/
 .vscode/
+codex-session
