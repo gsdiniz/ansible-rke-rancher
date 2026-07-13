@@ -5,6 +5,7 @@ playbook/certs/**/*.csr
 playbook/certs/**/*.cnf
 playbook/certs/**/*.srl
 inventory/hosts.local.yml
+inventory/custom-downstream.local.yml
 inventory/*.secret.yml
 inventory/*.vault.yml
 *.retry

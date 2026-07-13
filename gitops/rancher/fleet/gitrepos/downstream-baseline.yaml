@@ -1,0 +1,18 @@
+---
+apiVersion: fleet.cattle.io/v1alpha1
+kind: GitRepo
+metadata:
+  name: downstream-baseline
+  namespace: fleet-default
+spec:
+  repo: ssh://git@github.com/CHANGE_ME/ansible-rke-rancher.git
+  branch: main
+  paths:
+    - gitops/rancher/fleet/bundles/downstream-baseline
+  targets:
+    - name: imported-dev-clusters
+      clusterSelector:
+        matchLabels:
+          rancher.cattle.io/downstream-env: dev
+          rancher.cattle.io/downstream-type: imported
+

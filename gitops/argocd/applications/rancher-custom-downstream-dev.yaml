@@ -1,0 +1,23 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rancher-custom-downstream-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ssh://git@github.com/CHANGE_ME/ansible-rke-rancher.git
+    targetRevision: main
+    path: gitops/rancher/custom-clusters/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cattle-system
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+

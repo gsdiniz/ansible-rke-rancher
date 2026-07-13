@@ -1,0 +1,13 @@
+---
+apiVersion: management.cattle.io/v3
+kind: Cluster
+metadata:
+  name: downstream-dev
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    rancher.cattle.io/downstream-env: dev
+    rancher.cattle.io/downstream-type: imported
+spec:
+  displayName: downstream-dev
+  description: Imported/custom downstream cluster managed from Git.
+

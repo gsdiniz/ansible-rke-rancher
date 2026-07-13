@@ -1,0 +1,25 @@
+---
+apiVersion: management.cattle.io/v3
+kind: Project
+metadata:
+  name: downstream-dev-system
+  namespace: downstream-dev
+  labels:
+    app.kubernetes.io/managed-by: gitops
+spec:
+  clusterName: downstream-dev
+  displayName: System
+  description: System workloads and cluster operators.
+---
+apiVersion: management.cattle.io/v3
+kind: Project
+metadata:
+  name: downstream-dev-apps
+  namespace: downstream-dev
+  labels:
+    app.kubernetes.io/managed-by: gitops
+spec:
+  clusterName: downstream-dev
+  displayName: Applications
+  description: Application workloads for the dev downstream cluster.
+

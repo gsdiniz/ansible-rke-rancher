@@ -1,0 +1,11 @@
+---
+apiVersion: management.cattle.io/v3
+kind: ClusterRegistrationToken
+metadata:
+  name: default-token
+  namespace: downstream-dev
+  labels:
+    app.kubernetes.io/managed-by: gitops
+spec:
+  clusterName: downstream-dev
+
