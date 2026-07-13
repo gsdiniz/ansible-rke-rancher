@@ -1,4 +1,7 @@
 ---
+- name: Reboot node
+  ansible.builtin.reboot:
+
 - name: Restart rke2-server
   ansible.builtin.service:
     name: rke2-server

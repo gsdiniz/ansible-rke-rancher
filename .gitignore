@@ -10,3 +10,4 @@ inventory/*.vault.yml
 *.retry
 graphify-out/
 venv/
+.vscode/

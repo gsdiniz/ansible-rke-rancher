@@ -5,7 +5,7 @@ Ansible playbook to configure RKE2 Cluster with Rancher installed using custom C
 ***Tests made in Rocky Linux 9***
 
 ## Prerequisites
-1. 3 or more hosts / vm's - EL's distros (Oracle Linux, SUSE Linux, Red Hat, Alma Linux, Rocky Linux)
+1. 1 or more hosts / vm's - EL's distros (Oracle Linux, SUSE Linux, Red Hat, Alma Linux, Rocky Linux)
 1. Public ssh keys configured in hosts
 1. Internet Connection
 1. Custom CA root configured
@@ -17,6 +17,8 @@ Use `./inventory/hosts.yml` as a versioned example. For real environments, copy 
 
 * IP
 * Hostname
+
+For a single-node cluster, keep only the `primary_master` host in the `masters` group and omit workers or leave the `workers` group empty.
 
 ## Playbook - RKE2
 
@@ -42,11 +44,11 @@ Based in group vars, the principal master host is defined and configured as firs
 
 ### Masters
 
-All others master nodes and new added nodes will receive node-token from principal node to be configured as master node in rke2-cluster.
+All secondary master nodes and new added nodes will receive node-token from principal node to be configured as master node in rke2-cluster. In single-node inventories, this play is skipped.
 
 ### Agents
 
-All worker nodes and new added nodes will receive node-token from principal node to be configured as worker node in rke2-cluster.
+All worker nodes and new added nodes will receive node-token from principal node to be configured as worker node in rke2-cluster. In single-node inventories without workers, this play is skipped.
 
 
 ### Starting Up

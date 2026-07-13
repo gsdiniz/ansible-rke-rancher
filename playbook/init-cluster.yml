@@ -54,13 +54,21 @@
       no_log: true
 
 - name: Adding Master Nodes
-  hosts: masters
+  hosts: all
   become: true
+  pre_tasks:
+    - name: Run this play only on secondary masters
+      ansible.builtin.meta: end_host
+      when: inventory_hostname == primary_master or inventory_hostname not in groups.get('masters', [])
   roles:
     - role: server
 
 - name: Adding Worker Nodes
-  hosts: workers
+  hosts: all
   become: true
+  pre_tasks:
+    - name: Run this play only on worker nodes
+      ansible.builtin.meta: end_host
+      when: inventory_hostname not in groups.get('workers', [])
   roles:
     - role: agent

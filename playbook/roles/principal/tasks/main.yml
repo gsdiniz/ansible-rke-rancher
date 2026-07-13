@@ -9,6 +9,10 @@
     name:
     - rke2-selinux
     state: present
+  notify: Reboot node
+
+- name: Reboot after RKE2 SELinux policy installation if needed
+  ansible.builtin.meta: flush_handlers
 
 - name: Check if kubectl is installed
   ansible.builtin.stat:

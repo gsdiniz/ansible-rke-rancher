@@ -10,6 +10,17 @@
     state: directory
     mode: '0755'
 
+- name: Install RKE2-SELINUX
+  become: true
+  ansible.builtin.dnf:
+    name:
+    - rke2-selinux
+    state: present
+  notify: Reboot node
+
+- name: Reboot after RKE2 SELinux policy installation if needed
+  ansible.builtin.meta: flush_handlers
+
 - name: Create cluster config file
   when: inventory_hostname != primary_master
   become: true
@@ -19,14 +30,6 @@
     mode: '0600'
   no_log: true
   notify: Restart rke2-server
-
-- name: Install RKE2-SELINUX
-  become: true
-  ansible.builtin.dnf:
-    name:
-    - rke2-selinux
-    state: present
-      
 
 - name: Start server instance
   become: true
