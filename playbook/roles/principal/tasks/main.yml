@@ -1,7 +1,7 @@
 - name: Install RKE2 binaries
   ansible.builtin.shell:
     cmd: curl -sfL https://get.rke2.io | sh -
-    creates: /usr/local/bin/rke2
+    creates: /usr/bin/rke2
 
 - name: Install RKE2-SELINUX
   become: true
@@ -41,11 +41,17 @@
   failed_when: false
   changed_when: false
 
-- name: Download Helm
+- name: Install Helm
   ansible.builtin.shell: 'curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 /tmp/get_helm.sh && /tmp/get_helm.sh'
   args:
     creates: /usr/local/bin/helm
+  environment:
+    PATH: /usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
   when: helm_check.rc != 0
+
+- name: Verify Helm installation
+  ansible.builtin.command: /usr/local/bin/helm version
+  changed_when: false
 
 - name: Add rancher repo to helm
   kubernetes.core.helm_repository:
@@ -78,11 +84,36 @@
     mode: '0600'
   notify: Restart rke2-server
 
+- name: Restart RKE2 server after config change if needed
+  ansible.builtin.meta: flush_handlers
+
 - name: Start server instance
   ansible.builtin.service:
     name: rke2-server
     state: started
     enabled: true
+
+- name: Remove control-plane-only taint in single-node clusters
+  ansible.builtin.command: >-
+    /usr/local/bin/kubectl --kubeconfig /etc/rancher/rke2/kubeconfig.yaml
+    taint node {{ hostname }} CriticalAddonsOnly=true:NoExecute-
+  register: remove_single_node_taint
+  failed_when:
+    - remove_single_node_taint.rc != 0
+    - "'not found' not in remove_single_node_taint.stderr"
+    - "'not found' not in remove_single_node_taint.stdout"
+  changed_when: remove_single_node_taint.rc == 0
+  when:
+    - (rke2_schedule_workloads_on_servers | default((groups.get('masters', []) | length == 1) and (groups.get('workers', []) | length == 0))) | bool
+
+- name: Label single-node server as worker
+  ansible.builtin.command: >-
+    /usr/local/bin/kubectl --kubeconfig /etc/rancher/rke2/kubeconfig.yaml
+    label node {{ hostname }} node-role.kubernetes.io/worker=true --overwrite
+  register: label_single_node_worker
+  changed_when: "'not labeled' not in label_single_node_worker.stdout"
+  when:
+    - (rke2_schedule_workloads_on_servers | default((groups.get('masters', []) | length == 1) and (groups.get('workers', []) | length == 0))) | bool
 
 - name: Create kubeconfig dir
   ansible.builtin.file:

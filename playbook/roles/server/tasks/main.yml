@@ -1,7 +1,7 @@
 - name: Install RKE2 binaries
   ansible.builtin.shell:
     cmd: curl -sfL https://get.rke2.io | sh -
-    creates: /usr/local/bin/rke2
+    creates: /usr/bin/rke2
 
 - name: Create config dir
   become: true

@@ -46,6 +46,18 @@
     - selinux-policy-targeted
     state: present
 
+- name: Configure default user process and file descriptor limits
+  ansible.builtin.copy:
+    dest: /etc/security/limits.d/99-rke2.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      * soft nofile 65536
+      * hard nofile 65536
+      * soft nproc 32768
+      * hard nproc 32768
+
 - name: Download and install Calico SELinux policy
   dnf:
     name: https://downloads.tigera.io/ee/archives/calico-selinux-1.0-1.el9.noarch.rpm
