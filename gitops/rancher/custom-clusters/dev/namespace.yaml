@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: downstream-custom-dev
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    rancher.cattle.io/downstream-env: dev
+    rancher.cattle.io/downstream-type: custom
+

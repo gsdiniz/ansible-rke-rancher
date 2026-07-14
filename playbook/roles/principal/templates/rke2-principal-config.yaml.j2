@@ -1,8 +1,13 @@
+{% set rke2_single_node = (groups.get('masters', []) | length == 1) and (groups.get('workers', []) | length == 0) %}
+{% set rke2_server_schedulable = rke2_schedule_workloads_on_servers | default(rke2_single_node) %}
 cluster-cidr: {{cluster_cidr}}
 service-cidr: {{service_cidr}}
 cluster-dns: {{cluster_dns}}
 cluster-domain: cluster.local
 cni: canal
+{% if rke2_system_default_registry is defined and rke2_system_default_registry | length > 0 %}
+system-default-registry: "{{ rke2_system_default_registry }}"
+{% endif %}
 tls-san:
 {{ master_ips | to_nice_yaml }}
 # node-external-ip:
@@ -40,5 +45,7 @@ kube-proxy-arg:
 selinux: true           # Enable SELinux
 profile: ""     # CIS benchmarks compliance
 
+{% if not rke2_server_schedulable %}
 node-taint:
 - "CriticalAddonsOnly=true:NoExecute"
+{% endif %}

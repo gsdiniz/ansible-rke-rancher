@@ -1,0 +1,77 @@
+---
+- name: Read Rancher custom cluster registration command
+  hosts: localhost
+  gather_facts: false
+  vars:
+    rancher_cluster_name: "{{ hostvars[groups['downstream_custom'][0]].rancher_cluster_name }}"
+    rancher_registration_token_name: "{{ hostvars[groups['downstream_custom'][0]].rancher_registration_token_name | default('default-token') }}"
+    rancher_kubeconfig: "{{ hostvars[groups['downstream_custom'][0]].rancher_kubeconfig | default('rancher.kubeconfig') }}"
+  tasks:
+    - name: Validate downstream_custom inventory group
+      ansible.builtin.assert:
+        that:
+          - groups['downstream_custom'] is defined
+          - groups['downstream_custom'] | length > 0
+          - rancher_cluster_name is defined
+          - rancher_cluster_name | length > 0
+        fail_msg: "Inventory must define downstream_custom hosts and rancher_cluster_name."
+        quiet: true
+
+    - name: Read Rancher cluster registration token
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ rancher_kubeconfig }}"
+        api_version: management.cattle.io/v3
+        kind: ClusterRegistrationToken
+        namespace: "{{ rancher_cluster_name }}"
+        name: "{{ rancher_registration_token_name }}"
+      register: rancher_registration_token
+      no_log: true
+
+    - name: Extract Rancher node registration command
+      ansible.builtin.set_fact:
+        rancher_node_command_base: >-
+          {{
+            rancher_registration_token.resources[0].status.nodeCommand
+            | default(rancher_registration_token.resources[0].status.command | default(''))
+          }}
+      no_log: true
+
+    - name: Validate Rancher node registration command
+      ansible.builtin.assert:
+        that:
+          - rancher_node_command_base is defined
+          - rancher_node_command_base | length > 0
+        fail_msg: "Rancher did not publish a node registration command yet. Apply the custom cluster GitOps manifests and wait for ClusterRegistrationToken status."
+        quiet: true
+
+- name: Register empty VMs as Rancher custom cluster nodes
+  hosts: downstream_custom
+  become: true
+  gather_facts: false
+  vars:
+    rancher_role_args:
+      - "{{ '--etcd' if rancher_role_etcd | default(false) | bool else '' }}"
+      - "{{ '--controlplane' if rancher_role_controlplane | default(false) | bool else '' }}"
+      - "{{ '--worker' if rancher_role_worker | default(false) | bool else '' }}"
+    rancher_node_command: "{{ hostvars['localhost'].rancher_node_command_base }}"
+  tasks:
+    - name: Validate node role selection
+      ansible.builtin.assert:
+        that:
+          - rancher_role_etcd | default(false) | bool or rancher_role_controlplane | default(false) | bool or rancher_role_worker | default(false) | bool
+        fail_msg: "Each downstream_custom host must enable at least one role: rancher_role_etcd, rancher_role_controlplane, or rancher_role_worker."
+        quiet: true
+
+    - name: Check if Rancher system agent is already registered
+      ansible.builtin.stat:
+        path: /etc/rancher/agent/config.yaml
+      register: rancher_agent_config
+
+    - name: Register node in Rancher custom cluster
+      ansible.builtin.shell:
+        cmd: "{{ rancher_node_command }} {{ rancher_role_args | reject('equalto', '') | join(' ') }}"
+      args:
+        creates: /etc/rancher/agent/config.yaml
+      when: not rancher_agent_config.stat.exists
+      no_log: true
+

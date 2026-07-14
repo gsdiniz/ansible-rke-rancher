@@ -1,21 +1,14 @@
 - name: Install RKE2 binaries
   ansible.builtin.shell:
     cmd: curl -sfL https://get.rke2.io | sh -
-    creates: /usr/local/bin/rke2
+    creates: /usr/bin/rke2
 
 - name: Create config dir
   become: true
-  file:
+  ansible.builtin.file:
     path: /etc/rancher/rke2
     state: directory
-
-- name: Create cluster config file
-  when: inventory_hostname != primary_master
-  become: true
-  template:
-    src: rke2-master-config.yaml.j2
-    dest: /etc/rancher/rke2/config.yaml
-    mode: '0644'
+    mode: '0755'
 
 - name: Install RKE2-SELINUX
   become: true
@@ -23,7 +16,20 @@
     name:
     - rke2-selinux
     state: present
-      
+  notify: Reboot node
+
+- name: Reboot after RKE2 SELinux policy installation if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Create cluster config file
+  when: inventory_hostname != primary_master
+  become: true
+  ansible.builtin.template:
+    src: rke2-master-config.yaml.j2
+    dest: /etc/rancher/rke2/config.yaml
+    mode: '0600'
+  no_log: true
+  notify: Restart rke2-server
 
 - name: Start server instance
   become: true

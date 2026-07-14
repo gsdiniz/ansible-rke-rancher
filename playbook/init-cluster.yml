@@ -2,51 +2,73 @@
   hosts: all
   become: true
   gather_facts: no
+  pre_tasks:
+    - name: Validate inventory host variables
+      ansible.builtin.assert:
+        that:
+          - ansible_host is defined
+          - ansible_host | length > 0
+          - hostname is defined
+          - hostname | length > 0
+          - primary_master is defined
+          - primary_master in groups['masters']
+        fail_msg: "Each inventory host must define ansible_host and hostname, and primary_master must be in masters."
+        quiet: true
   roles:
     - role: init
 
 - name: Setting Fact - MASTER_IPS
-  hosts: masters
+  hosts: all
   gather_facts: no
   tasks:
-    - name: Get master node ip
-      set_fact:
-        master_ips: "{{ master_ips | default([]) + [ansible_ssh_host] }}"
-      # delegate_to: "{{ item }}"
-      with_inventory_hostnames: masters
+    - name: Build master node IP list
+      ansible.builtin.set_fact:
+        master_ips: "{{ groups['masters'] | map('extract', hostvars, 'ansible_host') | list }}"
 
 - name: Configure Principal Master Node
-  hosts: "{{ hostvars['localhost']['primary_master'] }}"
+  hosts: masters
   become: true
+  pre_tasks:
+    - name: Run this play only on the primary master
+      ansible.builtin.meta: end_host
+      when: inventory_hostname != primary_master
   roles:
     - role: principal
-
 
 - name: Publish Node Token to Nodes
   hosts: all
   become: true
   tasks:
     - name: Read cluster node-token
-      slurp:
+      ansible.builtin.slurp:
         src: /var/lib/rancher/rke2/server/node-token
       register: node_token_b64
-      when: inventory_hostname == primary_master
-
-    - name: Set cluster facts on all nodes
-      set_fact:
-        master_url: "https://{{ ansible_host }}:9345"
-        node_token: "{{ node_token_b64.content | b64decode }}"
       delegate_to: "{{ primary_master }}"
       run_once: true
+      no_log: true
+
+    - name: Set cluster facts on all nodes
+      ansible.builtin.set_fact:
+        master_url: "https://{{ hostvars[primary_master].ansible_host }}:9345"
+        node_token: "{{ node_token_b64.content | b64decode }}"
+      no_log: true
 
 - name: Adding Master Nodes
-  hosts: masters
+  hosts: all
   become: true
+  pre_tasks:
+    - name: Run this play only on secondary masters
+      ansible.builtin.meta: end_host
+      when: inventory_hostname == primary_master or inventory_hostname not in groups.get('masters', [])
   roles:
     - role: server
 
 - name: Adding Worker Nodes
-  hosts: workers
+  hosts: all
   become: true
+  pre_tasks:
+    - name: Run this play only on worker nodes
+      ansible.builtin.meta: end_host
+      when: inventory_hostname not in groups.get('workers', [])
   roles:
     - role: agent
