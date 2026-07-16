@@ -5,6 +5,22 @@ service_cidr: 10.43.0.0/16
 cluster_dns: 10.43.0.10
 rancher_hostname: rancher.local
 rke2_system_default_registry: registry.rancher.com
+rke2_cni: calico
+rke2_cilium_kube_proxy_replacement: true
+rke2_cilium_hubble_enabled: true
+rke2_cilium_hubble_ui_enabled: true
+rke2_cilium_bgp_enabled: false
+rke2_cilium_l2_enabled: false
+rke2_cilium_prometheus_enabled: true
+rke2_cilium_routing_mode: tunnel
+rke2_cilium_direct_routing_device: ""
+rke2_cilium_bgp_local_asn: 64512
+rke2_cilium_bgp_peer_asn: 64513
+rke2_cilium_bgp_peer_address: CHANGE_ME
+rke2_cilium_bgp_lb_pool_cidr: ""
+rke2_cilium_l2_interface: ""
+rke2_cilium_l2_lb_pool_start: ""
+rke2_cilium_l2_lb_pool_stop: ""
 tcp_ports:
 - 22
 - 53

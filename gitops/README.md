@@ -32,13 +32,16 @@ curl -sfL "$MANIFEST_URL" | kubectl --kubeconfig downstream.kubeconfig apply -f 
 
 The expected flow for empty VMs is:
 
-1. Apply `gitops/rancher/custom-clusters/<env>` to the Rancher management
+1. Choose the CNI overlay before the cluster is created:
+   - `gitops/rancher/custom-clusters/dev` creates a custom RKE2 cluster with Calico.
+   - `gitops/rancher/custom-clusters/dev-cilium` creates a custom RKE2 cluster with Cilium, kube-proxy replacement, Hubble Relay, and Hubble UI.
+2. Apply `gitops/rancher/custom-clusters/<env>` to the Rancher management
    cluster.
-2. Wait for Rancher to publish the node registration command in the
+3. Wait for Rancher to publish the node registration command in the
    `ClusterRegistrationToken` status.
-3. Copy `inventory/custom-downstream.example.yml` to an ignored inventory and
+4. Copy `inventory/custom-downstream.example.yml` to an ignored inventory and
    set the VM addresses and desired node roles.
-4. Run:
+5. Run:
 
 ```bash
 ansible-playbook -i inventory/custom-downstream.local.yml playbook/register-custom-downstream.yml
@@ -47,6 +50,9 @@ ansible-playbook -i inventory/custom-downstream.local.yml playbook/register-cust
 The playbook reads the registration command from Rancher and executes it on the
 VMs with `--etcd`, `--controlplane`, and/or `--worker` according to inventory
 host variables. The command contains credentials and is hidden with `no_log`.
+
+Do not change the CNI overlay after the custom cluster is created. Create a new
+cluster instead, then migrate workloads.
 
 Do not commit Rancher API keys, kubeconfigs, registration commands, generated
 tokens, or downstream cluster credentials.

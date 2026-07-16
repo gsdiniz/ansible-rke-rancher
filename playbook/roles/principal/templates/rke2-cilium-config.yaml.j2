@@ -1,0 +1,37 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-cilium
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    kubeProxyReplacement: {{ (rke2_cilium_kube_proxy_replacement | default(true) | bool) | ternary('true', 'false') }}
+{% if rke2_cilium_kube_proxy_replacement | default(true) | bool %}
+    k8sServiceHost: "localhost"
+    k8sServicePort: "6443"
+{% endif %}
+    bgpControlPlane:
+      enabled: {{ (rke2_cilium_bgp_enabled | default(false) | bool) | ternary('true', 'false') }}
+    l2announcements:
+      enabled: {{ (rke2_cilium_l2_enabled | default(false) | bool) | ternary('true', 'false') }}
+    hubble:
+      enabled: {{ (rke2_cilium_hubble_enabled | default(true) | bool) | ternary('true', 'false') }}
+      relay:
+        enabled: {{ (rke2_cilium_hubble_enabled | default(true) | bool) | ternary('true', 'false') }}
+      ui:
+        enabled: {{ (rke2_cilium_hubble_ui_enabled | default(true) | bool) | ternary('true', 'false') }}
+    prometheus:
+      enabled: {{ (rke2_cilium_prometheus_enabled | default(true) | bool) | ternary('true', 'false') }}
+      serviceMonitor:
+        enabled: {{ (rke2_cilium_prometheus_enabled | default(true) | bool) | ternary('true', 'false') }}
+{% if rke2_cilium_routing_mode | default('tunnel') | length > 0 %}
+    routingMode: "{{ rke2_cilium_routing_mode }}"
+{% endif %}
+{% if rke2_cilium_direct_routing_device | default('') | length > 0 %}
+    directRoutingDevice: "{{ rke2_cilium_direct_routing_device }}"
+    egressMasqueradeInterfaces: "{{ rke2_cilium_direct_routing_device }}"
+{% endif %}
+    bpf:
+      masquerade: true
+    rollOutCiliumPods: true

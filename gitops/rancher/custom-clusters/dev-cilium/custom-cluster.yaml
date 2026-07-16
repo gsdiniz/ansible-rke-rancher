@@ -1,0 +1,47 @@
+---
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  name: downstream-custom-dev-cilium
+  namespace: fleet-default
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    rancher.cattle.io/downstream-env: dev
+    rancher.cattle.io/downstream-type: custom
+    rancher.cattle.io/cni: cilium
+spec:
+  displayName: downstream-custom-dev-cilium
+  localClusterAuthEndpoint: {}
+  rkeConfig:
+    chartValues:
+      rke2-cilium:
+        kubeProxyReplacement: true
+        k8sServiceHost: localhost
+        k8sServicePort: "6443"
+        bgpControlPlane:
+          enabled: false
+        l2announcements:
+          enabled: false
+        hubble:
+          enabled: true
+          relay:
+            enabled: true
+          ui:
+            enabled: true
+        prometheus:
+          enabled: true
+          serviceMonitor:
+            enabled: true
+        routingMode: tunnel
+        bpf:
+          masquerade: true
+        rollOutCiliumPods: true
+    machineGlobalConfig:
+      cni: cilium
+      cluster-cidr: 10.42.0.0/16
+      service-cidr: 10.43.0.0/16
+      cluster-dns: 10.43.0.10
+      disable-kube-proxy: true
+      etcd-expose-metrics: true
+      profile: null
+      selinux: true

@@ -1,0 +1,65 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: bgp-cluster-default
+spec:
+  nodeSelector:
+    matchLabels:
+      bgp.enabled: "true"
+  bgpInstances:
+    - name: "instance-{{ rke2_cilium_bgp_local_asn }}"
+      localASN: {{ rke2_cilium_bgp_local_asn }}
+      peers:
+        - name: "router-upstream"
+          peerAddress: "{{ rke2_cilium_bgp_peer_address }}"
+          peerASN: {{ rke2_cilium_bgp_peer_asn }}
+          peerConfigRef:
+            name: "bgp-peer-config-default"
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: bgp-peer-config-default
+spec:
+  timers:
+    connectRetryTimeSeconds: 5
+    holdTimeSeconds: 9
+    keepAliveTimeSeconds: 3
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 120
+  families:
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: "bgp"
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: bgp-advertisements
+  labels:
+    advertise: "bgp"
+spec:
+  advertisements:
+    - advertisementType: "Service"
+      service:
+        addresses:
+          - LoadBalancerIP
+{% if rke2_cilium_bgp_lb_pool_cidr | default('') | length > 0 %}
+---
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: lb-pool-bgp
+  labels:
+    pool: bgp
+spec:
+  blocks:
+    - cidr: "{{ rke2_cilium_bgp_lb_pool_cidr }}"
+  serviceSelector:
+    matchLabels:
+      lb-pool: bgp
+{% endif %}

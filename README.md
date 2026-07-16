@@ -91,7 +91,9 @@ cluster. See `gitops/README.md` for the complete flow and Argo CD/Fleet
 examples.
 
 For custom clusters on empty VMs, apply
-`gitops/rancher/custom-clusters/dev` first, then run:
+`gitops/rancher/custom-clusters/dev` for Calico or
+`gitops/rancher/custom-clusters/dev-cilium` for Cilium with kube-proxy
+replacement and Hubble UI, then run:
 
 ```bash
 ansible-playbook -i inventory/custom-downstream.local.yml playbook/register-custom-downstream.yml

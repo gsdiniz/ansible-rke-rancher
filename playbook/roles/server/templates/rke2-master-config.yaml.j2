@@ -6,7 +6,10 @@ cluster-cidr: {{cluster_cidr}}
 service-cidr: {{service_cidr}}
 cluster-dns: {{cluster_dns}}
 cluster-domain: cluster.local
-cni: canal
+cni: {{ rke2_cni | default('calico') }}
+{% if (rke2_cni | default('calico')) == 'cilium' and (rke2_cilium_kube_proxy_replacement | default(false) | bool) %}
+disable-kube-proxy: true
+{% endif %}
 {% if rke2_system_default_registry is defined and rke2_system_default_registry | length > 0 %}
 system-default-registry: "{{ rke2_system_default_registry }}"
 {% endif %}
@@ -48,6 +51,15 @@ kube-proxy-arg:
 selinux: true           # Enable SELinux
 profile: ""     # CIS benchmarks compliance
 
+{% if (rke2_cni | default('calico')) == 'cilium' and ((rke2_cilium_bgp_enabled | default(false) | bool) or (rke2_cilium_l2_enabled | default(false) | bool)) %}
+node-label:
+{% if rke2_cilium_bgp_enabled | default(false) | bool %}
+  - "bgp.enabled=true"
+{% endif %}
+{% if rke2_cilium_l2_enabled | default(false) | bool %}
+  - "l2.enabled=true"
+{% endif %}
+{% endif %}
 {% if not rke2_server_schedulable %}
 node-taint:
   - "CriticalAddonsOnly=true:NoExecute"

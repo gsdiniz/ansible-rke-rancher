@@ -1,0 +1,34 @@
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: l2-announcement-default
+spec:
+  nodeSelector:
+    matchLabels:
+      l2.enabled: "true"
+  serviceSelector:
+    matchLabels:
+      lb-pool: l2
+  loadBalancerIPs: true
+  externalIPs: true
+{% if rke2_cilium_l2_interface | default('') | length > 0 %}
+  interfaces:
+    - "{{ rke2_cilium_l2_interface }}"
+{% endif %}
+{% if (rke2_cilium_l2_lb_pool_start | default('') | length > 0) and (rke2_cilium_l2_lb_pool_stop | default('') | length > 0) %}
+---
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: lb-pool-l2
+  labels:
+    pool: l2
+spec:
+  blocks:
+    - start: "{{ rke2_cilium_l2_lb_pool_start }}"
+      stop: "{{ rke2_cilium_l2_lb_pool_stop }}"
+  serviceSelector:
+    matchLabels:
+      lb-pool: l2
+{% endif %}

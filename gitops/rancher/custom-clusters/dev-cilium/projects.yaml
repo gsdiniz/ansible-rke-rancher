@@ -1,0 +1,26 @@
+---
+apiVersion: management.cattle.io/v3
+kind: Project
+metadata:
+  name: downstream-custom-dev-cilium-system
+  namespace: downstream-custom-dev-cilium
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    rancher.cattle.io/cni: cilium
+spec:
+  clusterName: downstream-custom-dev-cilium
+  displayName: System
+  description: System workloads and cluster operators.
+---
+apiVersion: management.cattle.io/v3
+kind: Project
+metadata:
+  name: downstream-custom-dev-cilium-apps
+  namespace: downstream-custom-dev-cilium
+  labels:
+    app.kubernetes.io/managed-by: gitops
+    rancher.cattle.io/cni: cilium
+spec:
+  clusterName: downstream-custom-dev-cilium
+  displayName: Applications
+  description: Application workloads for the custom dev downstream cluster.

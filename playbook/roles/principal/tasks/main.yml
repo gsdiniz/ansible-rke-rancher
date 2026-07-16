@@ -77,6 +77,41 @@
     state: directory
     mode: '0755'
 
+- name: Create RKE2 manifests dir
+  ansible.builtin.file:
+    path: /var/lib/rancher/rke2/server/manifests
+    state: directory
+    mode: '0755'
+  when: rke2_cni | default('calico') == 'cilium'
+
+- name: Configure packaged Cilium chart
+  ansible.builtin.template:
+    src: rke2-cilium-config.yaml.j2
+    dest: /var/lib/rancher/rke2/server/manifests/rke2-cilium-config.yaml
+    mode: '0644'
+  when: rke2_cni | default('calico') == 'cilium'
+  notify: Restart rke2-server
+
+- name: Configure Cilium BGP resources
+  ansible.builtin.template:
+    src: cilium-bgp.yaml.j2
+    dest: /var/lib/rancher/rke2/server/manifests/cilium-bgp.yaml
+    mode: '0644'
+  when:
+    - rke2_cni | default('calico') == 'cilium'
+    - rke2_cilium_bgp_enabled | default(false) | bool
+  notify: Restart rke2-server
+
+- name: Configure Cilium L2 announcement resources
+  ansible.builtin.template:
+    src: cilium-l2.yaml.j2
+    dest: /var/lib/rancher/rke2/server/manifests/cilium-l2.yaml
+    mode: '0644'
+  when:
+    - rke2_cni | default('calico') == 'cilium'
+    - rke2_cilium_l2_enabled | default(false) | bool
+  notify: Restart rke2-server
+
 - name: Set initial server config
   ansible.builtin.template:
     src: rke2-principal-config.yaml.j2
