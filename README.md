@@ -98,3 +98,11 @@ replacement and Hubble UI, then run:
 ```bash
 ansible-playbook -i inventory/custom-downstream.local.yml playbook/register-custom-downstream.yml
 ```
+
+When Cilium BGP and LB IPAM are enabled, expose workloads through Ingress
+objects. Application Services should normally stay as `ClusterIP`; the packaged
+`rke2-ingress-nginx` controller Service receives the `LoadBalancer` VIP and is
+selected by the Cilium pool through the `lb-pool: bgp` label.
+For source IP preservation, the ingress controller Service uses
+`externalTrafficPolicy: Local`; schedule ingress pods only on labeled worker
+nodes through `rke2_ingress_nginx_node_selector`.

@@ -1,0 +1,23 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: rke2-ingress-nginx
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    controller:
+      kind: Deployment
+{% if rke2_ingress_nginx_node_selector | default({}) | length > 0 %}
+      nodeSelector:
+{{ rke2_ingress_nginx_node_selector | to_nice_yaml(indent=2) | indent(8, true) }}
+{% endif %}
+      service:
+        enabled: true
+        type: LoadBalancer
+        externalTrafficPolicy: "{{ rke2_ingress_nginx_external_traffic_policy | default('Local') }}"
+{% if rke2_ingress_nginx_load_balancer_class | default('') | length > 0 %}
+        loadBalancerClass: "{{ rke2_ingress_nginx_load_balancer_class }}"
+{% endif %}
+        labels:
+          lb-pool: "{{ rke2_ingress_nginx_lb_pool_label_value | default('bgp') }}"

@@ -82,7 +82,9 @@
     path: /var/lib/rancher/rke2/server/manifests
     state: directory
     mode: '0755'
-  when: rke2_cni | default('calico') == 'cilium'
+  when: >
+    (rke2_cni | default('calico')) == 'cilium' or
+    (rke2_ingress_nginx_load_balancer_enabled | default(false) | bool)
 
 - name: Configure packaged Cilium chart
   ansible.builtin.template:
@@ -111,6 +113,13 @@
     - rke2_cni | default('calico') == 'cilium'
     - rke2_cilium_l2_enabled | default(false) | bool
   notify: Restart rke2-server
+
+- name: Configure packaged ingress-nginx LoadBalancer service
+  ansible.builtin.template:
+    src: rke2-ingress-nginx-config.yaml.j2
+    dest: /var/lib/rancher/rke2/server/manifests/rke2-ingress-nginx-config.yaml
+    mode: '0644'
+  when: rke2_ingress_nginx_load_balancer_enabled | default(false) | bool
 
 - name: Set initial server config
   ansible.builtin.template:

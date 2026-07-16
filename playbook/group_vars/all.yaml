@@ -21,6 +21,11 @@ rke2_cilium_bgp_lb_pool_cidr: ""
 rke2_cilium_l2_interface: ""
 rke2_cilium_l2_lb_pool_start: ""
 rke2_cilium_l2_lb_pool_stop: ""
+rke2_ingress_nginx_load_balancer_enabled: false
+rke2_ingress_nginx_lb_pool_label_value: bgp
+rke2_ingress_nginx_load_balancer_class: ""
+rke2_ingress_nginx_external_traffic_policy: Local
+rke2_ingress_nginx_node_selector: {}
 tcp_ports:
 - 22
 - 53

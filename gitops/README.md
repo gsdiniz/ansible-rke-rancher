@@ -54,5 +54,14 @@ host variables. The command contains credentials and is hidden with `no_log`.
 Do not change the CNI overlay after the custom cluster is created. Create a new
 cluster instead, then migrate workloads.
 
+For the Cilium overlay, external HTTP/HTTPS traffic is expected to enter through
+the packaged `rke2-ingress-nginx` controller. Keep application Services as
+`ClusterIP`, create Kubernetes `Ingress` resources for routing, and let Cilium
+LB IPAM allocate the `LoadBalancer` VIP only to the ingress controller Service
+selected by the `lb-pool: bgp` label.
+The Cilium overlay runs ingress-nginx as a `Deployment` with
+`externalTrafficPolicy: Local` and selects worker nodes labeled
+`ingress-ready=true`.
+
 Do not commit Rancher API keys, kubeconfigs, registration commands, generated
 tokens, or downstream cluster credentials.

@@ -36,6 +36,17 @@ spec:
         bpf:
           masquerade: true
         rollOutCiliumPods: true
+      rke2-ingress-nginx:
+        controller:
+          kind: Deployment
+          nodeSelector:
+            ingress-ready: "true"
+          service:
+            enabled: true
+            type: LoadBalancer
+            externalTrafficPolicy: Local
+            labels:
+              lb-pool: bgp
     machineGlobalConfig:
       cni: cilium
       cluster-cidr: 10.42.0.0/16
